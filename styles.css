@@ -1,0 +1,228 @@
+/* 通用设置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+body {
+    background-color: #edf2ee;
+    color: #333;
+    line-height: 1.6;
+}
+
+.container {
+    width: 100%; /* 使容器占满屏幕宽度 */
+    max-width: 1200px; /* 最大宽度为1200px */
+    margin: 20px auto; /* 上下留出一些空间 */
+    padding: 20px;
+    background-color: #edf2ee;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* 标题样式 */
+h1 {
+    text-align: center;
+    font-size: 2em; /* 缩小字体以适应小屏幕 */
+    margin-top: 50px; /* 与顶部的距离，调整此值即可 */
+    margin-bottom: 20px;
+    color: #333;
+}
+
+/* 输入框和按钮的容器样式 */
+.input-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+#characterInput {
+    width: 60%; /* 调整宽度 */
+    padding: 10px;
+    font-size: 16px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    transition: border-color 0.3s ease;
+}
+
+#characterInput::placeholder {
+    color: #aaa;
+    font-size: 14px;
+}
+
+#characterInput:focus {
+    border-color: #457c49;
+    outline: none;
+}
+
+select {
+    padding: 10px;
+    margin-left: 10px;
+    font-size: 14px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+}
+
+button {
+    padding: 10px 19px;
+    margin-left: 10px;
+    font-size: 16px;
+    color: #fff;
+    background-color: #457c49;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #305632;
+}
+
+/* 查询结果部分样式 */
+.results-section {
+    margin-top: 15px;
+}
+
+/* 表格样式 */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    border: 2px solid #ddd; /* 添加表格外边框 */
+    border-radius: 10px; /* 添加圆角 */
+    overflow: hidden; /* 保持圆角生效 */
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #5d7760; /* 表格单元格底部边框颜色 */
+}
+
+/* 表头样式 */
+th {
+    background-color: #457c49; /* 表头背景颜色 */
+    color: #f8f9fa; /* 表头文字颜色 */
+}
+
+/* 设置表格正文部分的背景颜色为护眼绿色 */
+#resultsTable tbody {
+    background-color: #C7EDCC; /* 主体背景护眼绿色 */
+}
+
+/* 鼠标悬停时，改变行的背景颜色 */
+#resultsTable tbody tr:hover {
+    background-color: #B2E4B8; /* 悬停时的稍深护眼色 */
+}
+
+
+
+/* 响应式设计 */
+@media (max-width: 600px) {
+    .container {
+        padding: 10px;
+    }
+
+    #characterInput {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    button {
+        width: 100%;
+    }
+
+    .input-group {
+        flex-direction: column;
+    }
+
+    h1 {
+        font-size: 1.8em; /* 小屏幕上稍微缩小字体 */
+    }
+
+    select, button {
+        font-size: 14px; /* 调整按钮和选择框的字体大小 */
+    }
+}
+
+/* 设置复选框容器为横向排列 */
+.filter-checkboxes {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: row; /* 让复选框横向排列 */
+    gap: 15px; /* 复选框之间的间距 */
+    justify-content: center; /* 居中排列 */
+    flex-wrap: wrap; /* 如果窗口宽度不够时，复选框自动换行 */
+}
+
+/* 为复选框设置绿色背景色 */
+.filter-checkboxes input[type="checkbox"] {
+    appearance: none; /* 移除默认复选框样式 */
+    width: 16px;
+    height: 16px;
+    border: 2px solid #B2E4B8; /* 绿色边框 */
+    border-radius: 3px; /* 设置圆角 */
+    background-color: #C7EDCC; /* 护眼绿色背景 */
+    cursor: pointer;
+    position: relative;
+}
+
+.filter-checkboxes input[type="checkbox"]:checked {
+    background-color: #B2E4B8; /* 选中时的稍深绿色背景 */
+    border-color: #B2E4B8; /* 选中后边框变为蓝色 */
+}
+
+.filter-checkboxes input[type="checkbox"]:checked::before {
+    content: "✔";
+    color: #234f88;
+    font-size: 12px;
+    position: absolute;
+    top: -2px;
+    left: 2px;
+}
+
+.filter-checkboxes label {
+    margin-left: 5px;
+}
+
+#instructionText {
+    width: 60%; /* 设置宽度为页面的60%，可根据需要调整 */
+    margin: 5px auto; /* 上下留出50px空间，自动水平居中 */
+    padding: 15px; /* 内边距 */
+    background: rgba(255, 255, 255, 0.8); /* 半透明白色背景 */
+    border-radius: 8px; /* 圆角 */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* 加强阴影效果 */
+    backdrop-filter: blur(10px); /* 磨砂效果 */
+    text-align: left; /* 文字居中 */
+    border: 1px solid #ddd; /* 边框与输入框一致 */
+}
+
+/* 可以根据需要调整标题、文本样式 */
+#instructionText h3 {
+    margin-bottom: 10px;
+    text-align: center; /* 文字居中 */
+    font-size: 1.5em;
+    color: #333;
+}
+
+#instructionText p {  
+    font-size: 1em;  
+    color: #555;  
+    line-height: 2; /* 调整行高以改善阅读体验，可选 */  
+} 
+
+/* 为标题和说明文字添加额外样式 */
+#instructionText h3 {
+    margin-bottom: 8px;
+    font-size: 1.3em; /* 调整字体大小以匹配整体设计 */
+    color: #333; /* 与页面保持一致的深灰色 */
+}
+
+#instructionText p {
+    font-size: 1em; /* 稍微缩小字体 */
+    color: #555; /* 与页面文字颜色一致 */
+}
