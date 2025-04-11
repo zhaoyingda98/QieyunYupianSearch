@@ -1,18 +1,17 @@
-let data1; // 存储异体字数据
-let entriesMap = new Map(); // 存储字典原始数据，使用 Map 来优化查找性能
-let isDataLoaded = false; // 标识数据是否已加载完毕
+let data1;
+let entriesMap = new Map();
+let isDataLoaded = false;
 
-// 加载 JSON 数据
-window.onload = function() {
-    // 并行加载异体字数据和两个字典数据文件，提升性能
+let allSources = new Set();
+let selectedSources = new Set();
+
+window.onload = function () {
     Promise.all([
         fetch('variants.json').then(response => response.json()),
         fetch('dictionary_part1.json').then(response => response.json()),
         fetch('dictionary_part2.json').then(response => response.json())
     ]).then(([variantsData, dictionaryData1, dictionaryData2]) => {
         data1 = variantsData;
-        
-        // 合并两个字典文件的数据
         const dictionaryData = [...dictionaryData1, ...dictionaryData2];
 
         dictionaryData.forEach(entry => {
@@ -23,16 +22,18 @@ window.onload = function() {
                 definition: entry.definition,
                 source: entry.title
             });
+            allSources.add(entry.title);
         });
-        checkDataLoaded(); // 检查数据加载状态
+
+        checkDataLoaded();
+        renderSourceSelector();
     });
 
-    // 为输入框添加回车键事件监听
     const characterInput = document.getElementById("characterInput");
-    characterInput.addEventListener("keydown", function(event) {
+    characterInput.addEventListener("keydown", function (event) {
         if (event.key === "Enter") {
             if (isDataLoaded) {
-                searchCharacter();  // 用户按下回车键时调用查询函数
+                searchCharacter();
             } else {
                 alert("数据正在加载，请稍后再试。");
             }
@@ -40,178 +41,247 @@ window.onload = function() {
     });
 };
 
-// 检查数据是否已完全加载
 function checkDataLoaded() {
     if (data1 && entriesMap.size > 0) {
-        isDataLoaded = true; // 当两个数据都加载完毕时，允许用户进行查询
-        document.getElementById("searchButton").disabled = false; // 启用按钮
+        isDataLoaded = true;
+        document.getElementById("searchButton").disabled = false;
     }
 }
 
-// 创建筛选复选框
-function createFilterCheckboxes(sources) {
-    const filterCheckboxesContainer = document.getElementById('filterCheckboxesContainer');
-    filterCheckboxesContainer.innerHTML = ''; // 清空已有的复选框
+// 渲染来源选择复选框（表格形式）
+function renderSourceSelector() {
+    const table = document.getElementById("sourceSelectorContainer");
+    table.innerHTML = "";
 
-    // 创建一个"全选/取消全选"的复选框
-    const selectAllCheckbox = document.createElement('input');
-    selectAllCheckbox.type = 'checkbox';
-    selectAllCheckbox.id = 'selectAll';
-    selectAllCheckbox.checked = true; // 初始状态为全选
-    selectAllCheckbox.onchange = toggleAllCheckboxes; // 绑定全选事件
-    filterCheckboxesContainer.appendChild(selectAllCheckbox);
-    
-    const selectAllLabel = document.createElement('label');
-    selectAllLabel.textContent = '全選/取消全選';
-    filterCheckboxesContainer.appendChild(selectAllLabel);
-    filterCheckboxesContainer.appendChild(document.createElement('br'));
+    const sourceCountMap = new Map();
+    entriesMap.forEach(entryList => {
+        entryList.forEach(item => {
+            const title = item.source;
+            sourceCountMap.set(title, (sourceCountMap.get(title) || 0) + 1);
+        });
+    });
 
-    // 为每个书目创建复选框
-    sources.forEach(source => {
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.value = source;
-        checkbox.checked = true; // 默认情况下全选
-        checkbox.onchange = filterResultsBySource; // 当复选框变化时，重新筛选
+    const allTitles = [...allSources].sort((a, b) => {
+        const countA = sourceCountMap.get(a) || 0;
+        const countB = sourceCountMap.get(b) || 0;
+        if (countA !== countB) return countB - countA;
 
-        const label = document.createElement('label');
-        label.textContent = source;
+        const isHanA = /^[\u4e00-\u9fa5]/.test(a);
+        const isHanB = /^[\u4e00-\u9fa5]/.test(b);
+        if (isHanA && !isHanB) return -1;
+        if (!isHanA && isHanB) return 1;
 
-        filterCheckboxesContainer.appendChild(checkbox);
-        filterCheckboxesContainer.appendChild(label);
-        filterCheckboxesContainer.appendChild(document.createElement('br'));
+        return a.localeCompare(b);
+    });
+
+    const headerRow = document.createElement("tr");
+    const headerCell = document.createElement("td");
+    headerCell.colSpan = 2;
+
+    const selectAll = document.createElement("input");
+    selectAll.type = "checkbox";
+    selectAll.checked = true;
+    selectAll.id = "selectAllSources";
+    selectAll.onchange = () => {
+        const allCheckboxes = table.querySelectorAll("input[type='checkbox']:not(#selectAllSources)");
+        selectedSources.clear();
+        allCheckboxes.forEach(cb => {
+            cb.checked = selectAll.checked;
+            if (selectAll.checked) selectedSources.add(cb.value);
+        });
+    };
+
+    const label = document.createElement("label");
+    label.textContent = "全選/取消全選";
+    headerCell.appendChild(selectAll);
+    headerCell.appendChild(label);
+    headerRow.appendChild(headerCell);
+    table.appendChild(headerRow);
+
+    allTitles.forEach(title => {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.colSpan = 2;
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.value = title;
+        checkbox.checked = true;
+        checkbox.onchange = () => {
+            if (checkbox.checked) {
+                selectedSources.add(title);
+            } else {
+                selectedSources.delete(title);
+            }
+        };
+
+        const label = document.createElement("label");
+        label.textContent = title;
+
+        cell.appendChild(checkbox);
+        cell.appendChild(label);
+        row.appendChild(cell);
+        table.appendChild(row);
+
+        selectedSources.add(title);
     });
 }
 
-// 全选/取消全选功能
 function toggleAllCheckboxes() {
     const checkboxes = document.querySelectorAll('#filterCheckboxesContainer input[type="checkbox"]:not(#selectAll)');
     const selectAll = document.getElementById('selectAll');
-    
-    // 更新所有复选框状态
-    checkboxes.forEach(checkbox => checkbox.checked = selectAll.checked); 
-    
-    // 重新根据选中的书目筛选显示结果
-    filterResultsBySource(); 
+    checkboxes.forEach(checkbox => checkbox.checked = selectAll.checked);
+    filterResultsBySource();
 }
 
-// 根据选中的复选框筛选结果
-// 根据选中的复选框筛选结果
 function filterResultsBySource() {
-    const selectedSources = Array.from(document.querySelectorAll('#filterCheckboxesContainer input[type="checkbox"]:checked:not(#selectAll)'))
-                                 .map(checkbox => checkbox.value); // 获取选中的书目来源
+    const selected = Array.from(document.querySelectorAll('#filterCheckboxesContainer input[type="checkbox"]:checked:not(#selectAll)'))
+        .map(cb => cb.value);
     const rows = document.querySelectorAll('#resultsTable tbody tr');
-
-    // 如果没有任何复选框被勾选，则隐藏所有行
-    if (selectedSources.length === 0) {
-        rows.forEach(row => {
-            row.style.display = 'none'; // 隐藏所有行
-        });
-    } else {
-        // 根据选中的书目来源显示相应的行
-        rows.forEach(row => {
-            const sourceCell = row.querySelector('td:last-child');
-            // 如果该行的来源在选中的书目中，则显示，否则隐藏
-            row.style.display = selectedSources.includes(sourceCell.textContent.trim()) ? '' : 'none';
-        });
-    }
+    rows.forEach(row => {
+        const sourceCell = row.querySelector('td:last-child');
+        row.style.display = selected.includes(sourceCell.textContent.trim()) ? '' : 'none';
+    });
 }
 
-// 在搜索完成后调用此方法生成复选框
+function createFilterCheckboxes(sources) {
+    const container = document.getElementById('filterCheckboxesContainer');
+    container.innerHTML = '';
+
+    const selectAll = document.createElement("input");
+    selectAll.type = "checkbox";
+    selectAll.id = "selectAll";
+    selectAll.checked = true;
+    selectAll.onchange = toggleAllCheckboxes;
+    container.appendChild(selectAll);
+    container.appendChild(Object.assign(document.createElement("label"), { textContent: "全選/取消全選" }));
+    container.appendChild(document.createElement("br"));
+
+    sources.forEach(source => {
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.value = source;
+        checkbox.checked = true;
+        checkbox.onchange = filterResultsBySource;
+
+        const label = document.createElement("label");
+        label.textContent = source;
+
+        container.appendChild(checkbox);
+        container.appendChild(label);
+        container.appendChild(document.createElement("br"));
+    });
+}
+
 function searchCharacter() {
     const inputChar = document.getElementById("characterInput").value;
+    const columnSelect = document.getElementById("columnSelect").value;
+    const variantToggle = document.getElementById("variantToggle").value;
+    const searchMode = document.getElementById("searchMode").value;
+
     const resultsBody = document.getElementById("resultsBody");
     const calledGroupsDiv = document.getElementById("calledGroups");
     const descriptionText = document.getElementById("descriptionText");
-    const instructionText = document.getElementById("instructionText"); // 获取说明文字的元素
-    const columnSelect = document.getElementById("columnSelect").value;
 
     resultsBody.innerHTML = "";
-
-    // 清空之前的查询结果，保留 descriptionText
-    const calledGroupsDivChildren = Array.from(calledGroupsDiv.children);
-    calledGroupsDivChildren.forEach(child => {
-        if (child !== descriptionText) {
-            child.remove();
-        }
+    document.getElementById("sourceSelectorContainer").style.display = "none";
+    Array.from(calledGroupsDiv.children).forEach(child => {
+        if (child !== descriptionText) child.remove();
     });
-
-    // 隐藏说明性文字
-    instructionText.style.display = 'none';
 
     const matchedVariants = new Set();
     const calledGroups = [];
-
-    // 查找匹配的异体字组
-    data1.forEach(group => {
-        group.forEach(char => {
-            if (char.includes(inputChar)) {
-                calledGroups.push(group);
-                group.forEach(variant => matchedVariants.add(variant));
-            }
-        });
-    });
-
-    // 根据查询结果显示或隐藏“返回的異體字組：”这段文字
-    if (calledGroups.length > 0) {
-        descriptionText.style.visibility = 'visible'; // 有结果时显示文字
-        calledGroupsDiv.innerHTML += calledGroups.map(group => `<p>[${group.join(', ')}]</p>`).join('');
-    } else {
-        descriptionText.style.visibility = 'hidden'; // 没有结果时隐藏文字
-        calledGroupsDiv.innerHTML += "<p>没有找到相关的异体字组。</p>";
-    }
-
-    // 后续代码生成表格的逻辑保持不变
-
-    const definitions = [];
+    const definitionsList = [];
     const seenDefinitions = new Set();
-    const uniqueSources = new Set(); // 收集书目来源
+    const uniqueSources = new Set();
 
-    matchedVariants.forEach(variant => {
-        entriesMap.forEach((value, key) => {
-            if (key.includes(variant)) {
-                value.forEach(definition => {
-                    const uniqueIdentifier = `${key}-${definition.definition}-${definition.source}`;
-                    if (!seenDefinitions.has(uniqueIdentifier)) {
-                        seenDefinitions.add(uniqueIdentifier);
-                        uniqueSources.add(definition.source); // 收集书目来源
-                        definitions.push({
+    if (searchMode === "byDefinition") {
+        entriesMap.forEach((definitions, key) => {
+            definitions.forEach(def => {
+                if (def.definition.includes(inputChar) && selectedSources.has(def.source)) {
+                    const uniqueId = `${key}-${def.definition}-${def.source}`;
+                    if (!seenDefinitions.has(uniqueId)) {
+                        seenDefinitions.add(uniqueId);
+                        uniqueSources.add(def.source);
+                        definitionsList.push({
                             character: key,
-                            definition: definition.definition,
-                            source: definition.source
+                            definition: def.definition,
+                            source: def.source
                         });
                     }
-                });
-            }
+                }
+            });
         });
-    });
+        descriptionText.style.visibility = 'hidden';
+        calledGroupsDiv.innerHTML += "<p>您正在查正文，未啟用異體字組。</p>";
+    } else {
+        if (variantToggle === "withVariants") {
+            data1.forEach(group => {
+                if (group.includes(inputChar)) {
+                    calledGroups.push(group);
+                    group.forEach(variant => matchedVariants.add(variant));
+                }
+            });
+            if (matchedVariants.size === 0) matchedVariants.add(inputChar);
+        } else {
+            matchedVariants.add(inputChar);
+        }
 
-    // 根据用户的选择来生成表格表头
+        if (variantToggle === "withoutVariants") {
+            descriptionText.style.visibility = 'visible';
+            calledGroupsDiv.innerHTML += `<p>您查詢的是原字：<strong>${inputChar}</strong>，未關聯異體。</p>`;
+        } else {
+            if (calledGroups.length > 0) {
+                descriptionText.style.visibility = 'visible';
+                calledGroupsDiv.innerHTML += calledGroups.map(group => `<p>[${group.join(', ')}]</p>`).join('');
+            } else {
+                descriptionText.style.visibility = 'hidden';
+                calledGroupsDiv.innerHTML += "<p>沒有找到相關的異體字組。</p>";
+            }
+        }
+
+        matchedVariants.forEach(variant => {
+            entriesMap.forEach((value, key) => {
+                if (key.includes(variant)) {
+                    value.forEach(def => {
+                        if (!selectedSources.has(def.source)) return;
+                        const uniqueId = `${key}-${def.definition}-${def.source}`;
+                        if (!seenDefinitions.has(uniqueId)) {
+                            seenDefinitions.add(uniqueId);
+                            uniqueSources.add(def.source);
+                            definitionsList.push({
+                                character: key,
+                                definition: def.definition,
+                                source: def.source
+                            });
+                        }
+                    });
+                }
+            });
+        });
+    }
+
     let tableHeader = "<tr>";
     if (columnSelect === "all") {
         tableHeader += "<th>字頭</th><th>全文</th><th>书目</th>";
-    } else if (columnSelect === "definitionOnly") {
+    } else {
         tableHeader += "<th>全文</th>";
     }
     tableHeader += "</tr>";
     document.querySelector("#resultsTable thead").innerHTML = tableHeader;
 
-    if (definitions.length > 0) {
-        const rows = definitions.map(definition => {
+    if (definitionsList.length > 0) {
+        const rows = definitionsList.map(def => {
             let row = "<tr>";
             if (columnSelect === "all") {
-                row += `<td>${definition.character}</td><td>${definition.definition}</td><td>${definition.source}</td>`;
-            } else if (columnSelect === "definitionOnly") {
-                row += `<td>${definition.definition}</td>`;
-                row += `<td style="display:none;">${definition.source}</td>`; // 隐藏书目列，但保留数据
+                row += `<td>${def.character}</td><td>${def.definition}</td><td>${def.source}</td>`;
+            } else {
+                row += `<td>${def.definition}</td><td style="display:none;">${def.source}</td>`;
             }
             row += "</tr>";
             return row;
         }).join('');
-
         resultsBody.innerHTML = rows;
-
-        // 创建筛选用的复选框
         createFilterCheckboxes([...uniqueSources]);
     } else {
         resultsBody.innerHTML = "<tr><td colspan='3'>没有找到相關字。</td></tr>";
