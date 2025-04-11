@@ -226,3 +226,46 @@ th {
     font-size: 1em; /* 稍微缩小字体 */
     color: #555; /* 与页面文字颜色一致 */
 }
+/* 来源勾选表格样式 */
+.source-selector-table {
+    margin: 10px auto;
+    border-collapse: collapse;
+    width: 80%;
+    background-color: #f4f8f3;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.source-selector-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #ddd;
+    vertical-align: middle;
+}
+
+.source-selector-table input[type="checkbox"] {
+    margin-right: 6px;
+}
+#instructionLinkContainer {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.instruction-link {
+    color: #3a7c4f; /* 温和绿色 */
+    font-size: 16px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease, text-decoration 0.3s ease;
+    cursor: pointer;
+}
+
+.instruction-link:hover {
+    color: #265c37; /* 悬停时稍深 */
+    text-decoration: underline;
+}
+
+.instruction-link:active {
+    color: #6da382; /* 点击时柔和一些 */
+}
+
+
